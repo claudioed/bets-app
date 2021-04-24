@@ -1,0 +1,79 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: bets
+        stack: echo
+        interface: rest
+        language: golang
+      name: bets
+    spec:
+      ports:
+        - name: http
+          port: 9999
+          protocol: TCP
+          targetPort: 9999
+      selector:
+        app: bets
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      labels:
+        version: v1
+        app: bets
+      name: bets
+    spec:
+      replicas: 1
+      revisionHistoryLimit: 2
+      selector:
+        matchLabels:
+          app: bets
+      template:
+        metadata:
+          labels:
+            app: bets
+            version: v1
+            stack: echo
+            interface: rest
+            language: golang
+        spec:
+          containers:
+            - env:
+                - name: MATCH_SVC
+                  value: "http://matches:9999/api/matches/6c51d4dd-e277-4282-9c51-871ba7fb16b3"
+                - name: CHAMPIONSHIP_SVC
+                  value: "http://championships:9999/api/championships/144954fe-b6c3-4a51-80d3-92911a06265c"
+                - name: PLAYER_SVC
+                  value: "http://players:9999/api/players/144954fe-b6c3-4a51-80d3-92911a06265c"
+              image: gcr.io/mvp-mesh-pre-testing/bet:latest
+              imagePullPolicy: Always
+              resources:
+                requests:
+                  memory: "5Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "10Mi"
+                  cpu: "100m"
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 9999
+                  scheme: HTTP
+                initialDelaySeconds: 1
+              name: bets
+              ports:
+                - containerPort: 9999
+                  name: http
+                  protocol: TCP
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 9999
+                  scheme: HTTP
+                initialDelaySeconds: 1
+              securityContext:
+                privileged: false
