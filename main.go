@@ -19,6 +19,19 @@ import (
 
 var log *zerolog.Logger
 var client *http.Client
+var incomingHeaders = []string{
+	"Authorization",
+	"x-version",
+
+	// open tracing
+	"x-request-id",
+	"x-b3-traceid",
+	"x-b3-spanid",
+	"x-b3-parentspanid",
+	"x-b3-sampled",
+	"x-b3-flags",
+	"x-ot-span-context",
+}
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -92,8 +105,14 @@ type HealthData struct {
 }
 
 func CreateBet(c echo.Context) error {
+
+	if c.Request().Header.Get("Content-Type") != "application/json" {
+		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
+	}
+
 	defer c.Request().Body.Close()
 	bet := &Bet{}
+
 	if err := json.NewDecoder(c.Request().Body).Decode(bet); err != nil {
 		log.Error().Err(err).Msg("Failed reading the request body")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error)
@@ -112,8 +131,8 @@ func CreateBet(c echo.Context) error {
 	}
 
 	b := &Bet{
-		HomeTeamScore: strconv.Itoa(match.Teams.Home.Score),
-		AwayTeamScore: strconv.Itoa(match.Teams.Away.Score),
+		HomeTeamScore: strconv.Itoa(2),
+		AwayTeamScore: strconv.Itoa(3),
 		Championship:  champ,
 		Match:         match.String(),
 		Email:         player,
@@ -154,19 +173,7 @@ func match(ctx echo.Context) (*Match, int, error) {
 }
 
 func forwardHeaders(ctx echo.Context, r *http.Request) {
-	incomingHeaders := []string{
-		"Authorization",
-		"x-version",
 
-		// open tracing
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-ot-span-context",
-	}
 	for _, th := range incomingHeaders {
 		h := ctx.Request().Header.Get(th)
 		if h != "" {
@@ -248,25 +255,13 @@ type Error struct {
 }
 
 type Match struct {
-	Date         time.Time `json:"date"`
-	Championship struct {
-		Name  string `json:"name"`
-		Stage string `json:"stage"`
-	} `json:"championship"`
-	Teams struct {
-		Home struct {
-			Name  string `json:"name"`
-			Score int    `json:"score"`
-		} `json:"home"`
-		Away struct {
-			Name  string `json:"name"`
-			Score int    `json:"score"`
-		} `json:"Away"`
-	} `json:"teams"`
+	HomeTeam     string `json:"homeTeam,omitempty"`
+	AwayTeam     string `json:"awayTeam,omitempty"`
+	Championship string `json:"championship,omitempty"`
 }
 
 func (m *Match) String() string {
-	h := m.Teams.Home
-	a := m.Teams.Away
-	return fmt.Sprintf("%s - %s %dx%d %s (%s)", m.Date.Format("2006-01-02"), h.Name, h.Score, a.Score, a.Name, m.Championship.Stage)
+	h := m.HomeTeam
+	a := m.AwayTeam
+	return fmt.Sprintf("%s %dx%d %s", h, 2, 3, a)
 }
