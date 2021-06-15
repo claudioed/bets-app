@@ -7,10 +7,7 @@ on:
   push:
     branches:
     - main
-  pull_request:
-    branches:
-    - main
-
+    
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # The "build" workflow
@@ -79,7 +76,7 @@ jobs:
         title: '[Release] Release number  ${{ github.sha }} is ready'
         body: |
            New BETS release
-           Branch: ${{ github.head_ref }}
+           Branch: ${{ github.base_ref }}
            Repository: ${{ github.repository }}
            Pipeline: ${{ github.workflow }}
            
