@@ -63,7 +63,7 @@ jobs:
       with:
         token: ${{ secrets.PAT }}
         repository: claudioed/bets-helm
-    - run: sed -i 's/latest/${{ github.sha }}/' stable/bets/values-istio.yaml       
+    - run: sed -i 's/latest/${{ github.sha }}/' rollout/bets/values.yaml       
     - uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.PAT }}
