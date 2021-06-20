@@ -44,6 +44,7 @@ func init() {
 				Interface("headers", req.Header).
 				Msg("calling " + req.Method + " " + req.URL.String())
 		},
+
 		LogResponse: func(res *http.Response) {
 			req := res.Request
 			log.Debug().
@@ -105,10 +106,6 @@ type HealthData struct {
 }
 
 func CreateBet(c echo.Context) error {
-
-	if c.Request().Header.Get("Content-Type") != "application/json" {
-		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
-	}
 
 	defer c.Request().Body.Close()
 	bet := &Bet{}
