@@ -110,6 +110,10 @@ func CreateBet(c echo.Context) error {
 	defer c.Request().Body.Close()
 	bet := &Bet{}
 
+	if c.Request().Header.Get("Content-Type") != "application/json" {
+		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
+	}
+
 	if err := json.NewDecoder(c.Request().Body).Decode(bet); err != nil {
 		log.Error().Err(err).Msg("Failed reading the request body")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error)
