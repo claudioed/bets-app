@@ -117,7 +117,6 @@ func CreateBet(c echo.Context) error {
 	bet := &Bet{}
 
 	if c.Request().Header.Get("Content-Type") != "application/json" {
-
 		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
 	}
 
