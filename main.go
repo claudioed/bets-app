@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"time"
 
@@ -107,10 +108,16 @@ type HealthData struct {
 
 func CreateBet(c echo.Context) error {
 
-	defer c.Request().Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(c.Request().Body)
 	bet := &Bet{}
 
 	if c.Request().Header.Get("Content-Type") != "application/json" {
+
 		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
 	}
 
