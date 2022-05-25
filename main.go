@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -66,18 +67,22 @@ func main() {
 		return func(c echo.Context) (err error) {
 			req := c.Request()
 			res := c.Response()
-			start := time.Now()
-			log.Debug().
-				Interface("headers", req.Header).
-				Msg(">>> " + req.Method + " " + req.RequestURI)
-			if err = next(c); err != nil {
-				c.Error(err)
+
+			if !strings.Contains(req.RequestURI, "") {
+				start := time.Now()
+				log.Debug().
+					Interface("headers", req.Header).
+					Msg(">>> " + req.Method + " " + req.RequestURI)
+				if err = next(c); err != nil {
+					c.Error(err)
+				}
+				log.Debug().
+					Str("latency", time.Now().Sub(start).String()).
+					Int("status", res.Status).
+					Interface("headers", res.Header()).
+					Msg("<<< " + req.Method + " " + req.RequestURI)
+				return
 			}
-			log.Debug().
-				Str("latency", time.Now().Sub(start).String()).
-				Int("status", res.Status).
-				Interface("headers", res.Header()).
-				Msg("<<< " + req.Method + " " + req.RequestURI)
 			return
 		}
 	})
