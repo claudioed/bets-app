@@ -1,1 +1,1 @@
-extends: [[spectral:oas, all]]
+extends: [[spectral:oas, recommended]]
