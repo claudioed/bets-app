@@ -15,3 +15,4 @@ jobs:
       - uses: stoplightio/spectral-action@latest
         with:
           file_glob: 'assets/api-docs/bets-api.yaml'
+          spectral_ruleset: 'assets/rules/openapi3.spectral.yaml'
