@@ -1,1 +1,4 @@
-extends: [[spectral:oas, recommended]]
+extends: [[spectral:oas, all]]
+rules:
+  info-contact: error
+  operation-tags: error
