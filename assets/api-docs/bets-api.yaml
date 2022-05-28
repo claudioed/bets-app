@@ -5,18 +5,8 @@ info:
 servers:
   - url: 'http://localhost:9999/api'
     description: Development Environment
-  - url: 'http://bets.bets.svc.cluster.local:9999'
-    description: Kubernetes Environment
-
-x-kong-name: bets-api
-
-x-kong-service-defaults:
-  # the defaults for the Kong services generated from 'servers' above
-  # see https://docs.konghq.com/gateway/latest/admin-api/#service-object
-  retries: 1
-  connect_timeout: 3000
-  write_timeout: 3000
-  read_timeout: 3000
+  - url: 'https://bets.api.com'
+    description: Production Environment
 
 paths:
   /bets:
