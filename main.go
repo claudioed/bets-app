@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -21,19 +19,6 @@ import (
 
 var log *zerolog.Logger
 var client *http.Client
-var incomingHeaders = []string{
-	"Authorization",
-	"x-version",
-
-	// open tracing
-	"x-request-id",
-	"x-b3-traceid",
-	"x-b3-spanid",
-	"x-b3-parentspanid",
-	"x-b3-sampled",
-	"x-b3-flags",
-	"x-ot-span-context",
-}
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -46,7 +31,6 @@ func init() {
 				Interface("headers", req.Header).
 				Msg("calling " + req.Method + " " + req.URL.String())
 		},
-
 		LogResponse: func(res *http.Response) {
 			req := res.Request
 			log.Debug().
@@ -67,22 +51,18 @@ func main() {
 		return func(c echo.Context) (err error) {
 			req := c.Request()
 			res := c.Response()
-
-			if !strings.Contains(req.RequestURI, "") {
-				start := time.Now()
-				log.Debug().
-					Interface("headers", req.Header).
-					Msg(">>> " + req.Method + " " + req.RequestURI)
-				if err = next(c); err != nil {
-					c.Error(err)
-				}
-				log.Debug().
-					Str("latency", time.Now().Sub(start).String()).
-					Int("status", res.Status).
-					Interface("headers", res.Header()).
-					Msg("<<< " + req.Method + " " + req.RequestURI)
-				return
+			start := time.Now()
+			log.Debug().
+				Interface("headers", req.Header).
+				Msg(">>> " + req.Method + " " + req.RequestURI)
+			if err = next(c); err != nil {
+				c.Error(err)
 			}
+			log.Debug().
+				Str("latency", time.Now().Sub(start).String()).
+				Int("status", res.Status).
+				Interface("headers", res.Header()).
+				Msg("<<< " + req.Method + " " + req.RequestURI)
 			return
 		}
 	})
@@ -93,7 +73,7 @@ func main() {
 		AllowMethods: []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE},
 	}))
 
-	e.Static("/static", "assets")
+	e.Static("/static", "assets/api-docs")
 
 	// Server
 	e.POST("/api/bets", CreateBet)
@@ -112,19 +92,8 @@ type HealthData struct {
 }
 
 func CreateBet(c echo.Context) error {
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(c.Request().Body)
+	defer c.Request().Body.Close()
 	bet := &Bet{}
-
-	if c.Request().Header.Get("Content-Type") != "application/json" {
-		return echo.NewHTTPError(http.StatusUnsupportedMediaType)
-	}
-
 	if err := json.NewDecoder(c.Request().Body).Decode(bet); err != nil {
 		log.Error().Err(err).Msg("Failed reading the request body")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error)
@@ -185,7 +154,19 @@ func match(ctx echo.Context) (*Match, int, error) {
 }
 
 func forwardHeaders(ctx echo.Context, r *http.Request) {
+	incomingHeaders := []string{
+		"Authorization",
+		"x-version",
 
+		// open tracing
+		"x-request-id",
+		"x-b3-traceid",
+		"x-b3-spanid",
+		"x-b3-parentspanid",
+		"x-b3-sampled",
+		"x-b3-flags",
+		"x-ot-span-context",
+	}
 	for _, th := range incomingHeaders {
 		h := ctx.Request().Header.Get(th)
 		if h != "" {
@@ -267,13 +248,25 @@ type Error struct {
 }
 
 type Match struct {
-	HomeTeam     string `json:"homeTeam,omitempty"`
-	AwayTeam     string `json:"awayTeam,omitempty"`
-	Championship string `json:"championship,omitempty"`
+	Date         time.Time `json:"date"`
+	Championship struct {
+		Name  string `json:"name"`
+		Stage string `json:"stage"`
+	} `json:"championship"`
+	Teams struct {
+		Home struct {
+			Name  string `json:"name"`
+			Score int    `json:"score"`
+		} `json:"home"`
+		Away struct {
+			Name  string `json:"name"`
+			Score int    `json:"score"`
+		} `json:"Away"`
+	} `json:"teams"`
 }
 
 func (m *Match) String() string {
-	h := m.HomeTeam
-	a := m.AwayTeam
-	return fmt.Sprintf("%s %dx%d %s", h, 2, 3, a)
+	h := m.Teams.Home
+	a := m.Teams.Away
+	return fmt.Sprintf("%s - %s %dx%d %s (%s)", m.Date.Format("2006-01-02"), h.Name, h.Score, a.Score, a.Name, m.Championship.Stage)
 }
