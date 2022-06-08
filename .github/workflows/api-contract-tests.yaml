@@ -20,5 +20,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install -g newman
-      - run: npm install --global prism
+      - run: npm install -location=global
       - run: prism mock assets/api-docs/bets-api.yaml
