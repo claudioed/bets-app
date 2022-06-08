@@ -10,7 +10,7 @@ jobs:
     services:
       apimock:
         image: stoplight/prism:latest
-        options: prism mock assets/api-docs/bets-api.yaml
+        options: --prism mock assets/api-docs/bets-api.yaml
         ports:
           - 4010:4010
 
