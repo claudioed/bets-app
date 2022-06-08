@@ -8,7 +8,7 @@ jobs:
     name: Check OpenAPI Contract
     runs-on: ubuntu-latest
     services:
-      mock:
+      stub:
         image: stoplight/prism:latest
         options: --entrypoint prism mock assets/api-docs/bets-api.yaml
         ports:
