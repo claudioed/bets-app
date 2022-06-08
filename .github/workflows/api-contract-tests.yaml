@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 15.x]
+        node-version: [16.x]
 
     steps:
       - uses: actions/checkout@v3
@@ -20,5 +20,4 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install -g newman
-      - run: npm install -g prism
-      - run: prism mock assets/api-docs/bets-api.yaml
+      - run: npx prism mock assets/api-docs/bets-api.yaml
