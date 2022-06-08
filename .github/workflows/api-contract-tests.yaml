@@ -1,23 +1,24 @@
-name: Test API Contract
+name: API Contract Tests
 
 on:
-  - pull_request
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    name: Check OpenAPI Contract
+
     runs-on: ubuntu-latest
-    services:
-      apimock:
-        image: stoplight/prism:latest
-        options: --prism mock assets/api-docs/bets-api.yaml
-        ports:
-          - 4010:4010
+
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x, 14.x, 15.x]
 
     steps:
-      # Check out the repository
-      - uses: actions/checkout@v2
-
-      - uses: matt-ball/newman-action@master
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
-          collection: assets/api-tests/bets.postman.json
+          node-version: ${{ matrix.node-version }}
+      - run: npm install -g newman
+      - run: npm install -g prism
+      - run: prism mock assets/api-docs/bets-api.yaml
