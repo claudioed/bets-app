@@ -10,7 +10,7 @@ jobs:
     services:
       stub:
         image: stoplight/prism:latest
-        options: --entrypoint prism mock assets/api-docs/bets-api.yaml
+        #options: --entrypoint prism mock assets/api-docs/bets-api.yaml
         ports:
           - 4010:4010
 
