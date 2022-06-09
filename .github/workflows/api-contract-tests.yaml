@@ -29,7 +29,7 @@ jobs:
 
       - name: Install Global Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm -g install prism newman
+        run: npm -g install @stoplight/prism-cli newman
 
       - name: Start mock
-        run: newman --version
+        run: prism --version
