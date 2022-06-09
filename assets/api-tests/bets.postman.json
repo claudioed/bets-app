@@ -120,12 +120,12 @@
   "variable": [
     {
       "type": "string",
-      "value": "http://apimock:4010",
+      "value": "http://127.0.0.1:4010",
       "key": "baseUrl"
     },
     {
       "type": "string",
-      "value": "http://apimock:4010",
+      "value": "http://127.0.0.1:4010",
       "key": "bets-Url"
     }
   ],
