@@ -31,8 +31,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm -g install @stoplight/prism-cli newman
 
-      - name: Start mock
-        run: prism mock assets/api-docs/bets-api.yaml
-
       - name: Run contract tests
-        run: newman run assets/api-tests/bets.postman.json
+        run:  |
+          prism mock assets/api-docs/bets-api.yaml && newman run assets/api-tests/bets.postman.json 
+
