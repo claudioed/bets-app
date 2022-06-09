@@ -32,4 +32,4 @@ jobs:
         run: npm -g install prism newman
 
       - name: Start mock
-        run: prism --version
+        run: newman --version
