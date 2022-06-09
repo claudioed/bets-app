@@ -32,4 +32,4 @@ jobs:
         run: npm -g install @stoplight/prism-cli newman
 
       - name: Start mock
-        run: prism --version
+        run: prism mock assets/api-docs/bets-yaml
