@@ -33,3 +33,6 @@ jobs:
 
       - name: Start mock
         run: prism mock assets/api-docs/bets-api.yaml
+
+      - name: Run contract tests
+        run: newman run assets/api-tests/bets.postman.json
