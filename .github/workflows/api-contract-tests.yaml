@@ -33,5 +33,5 @@ jobs:
 
       - name: Run contract tests
         run:  |
-          prism mock assets/api-docs/bets-api.yaml && newman run assets/api-tests/bets.postman.json 
+          prism mock assets/api-docs/bets-api.yaml & newman run assets/api-tests/bets.postman.json 
 
