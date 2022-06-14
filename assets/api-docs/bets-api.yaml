@@ -30,7 +30,6 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/request-create-bet'
               properties:
                 homeTeamScore:
                   type: string
