@@ -12,6 +12,10 @@ servers:
   -
     url: 'https://bets.api.com'
     description: Production Environment
+
+tags:
+  - name: bets
+
 paths:
   /bets:
     summary: >-
