@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
   title: Bets - Bets API
   version: 2.0.0
+  contact:
+    name: Bets
+    email: bets@example.com
 servers:
   -
     url: 'http://localhost:9999/api'
