@@ -12,9 +12,11 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	stdout "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"io/ioutil"
 	"net/http"
@@ -50,13 +52,19 @@ func init() {
 }
 
 func initTracer() (*sdktrace.TracerProvider, error) {
-	exporter, err := stdout.New(stdout.WithPrettyPrint())
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(os.Getenv("JAEGER_API"))))
 	if err != nil {
 		return nil, err
 	}
 	tp := sdktrace.NewTracerProvider(
+		// Always be sure to batch in production.
+		sdktrace.WithBatcher(exp),
+		// Record information about this application in a Resource.
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("bet"),
+		)),
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
 	)
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
