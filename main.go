@@ -216,7 +216,11 @@ func forwardHeaders(ctx echo.Context, r *http.Request) {
 		"x-b3-parentspanid",
 		"x-b3-sampled",
 		"x-b3-flags",
-		"x-ot-span-context",
+
+		// open telemetry
+		"ot-tracer-spanid",
+		"ot-tracer-traceid",
+		"ot-tracer-sampled",
 	}
 	for _, th := range incomingHeaders {
 		h := ctx.Request().Header.Get(th)
