@@ -1,24 +1,31 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"time"
-
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/motemen/go-loghttp"
 	"github.com/rs/zerolog"
-
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	stdout "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
 
 var log *zerolog.Logger
 var client *http.Client
+var tracer = otel.Tracer("echo-server")
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -40,6 +47,20 @@ func init() {
 		},
 	}
 	client = &http.Client{Transport: transport}
+}
+
+func initTracer() (*sdktrace.TracerProvider, error) {
+	exporter, err := stdout.New(stdout.WithPrettyPrint())
+	if err != nil {
+		return nil, err
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	return tp, nil
 }
 
 func main() {
@@ -75,6 +96,23 @@ func main() {
 
 	e.Static("/static", "assets/api-docs")
 
+	tp, err := initTracer()
+	if err != nil {
+		log.Panic()
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
+	e.Use(otelecho.Middleware("bet"))
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		ctx := c.Request().Context()
+		oteltrace.SpanFromContext(ctx).RecordError(err)
+		e.DefaultHTTPErrorHandler(err, c)
+	}
+
 	// Server
 	e.POST("/api/bets", CreateBet)
 	e.GET("/health", Health)
@@ -92,12 +130,16 @@ type HealthData struct {
 }
 
 func CreateBet(c echo.Context) error {
+
 	defer c.Request().Body.Close()
 	bet := &Bet{}
 	if err := json.NewDecoder(c.Request().Body).Decode(bet); err != nil {
 		log.Error().Err(err).Msg("Failed reading the request body")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error)
 	}
+
+	_, span := tracer.Start(c.Request().Context(), "createBet", oteltrace.WithAttributes(attribute.String("playerEmail", bet.Email)))
+	defer span.End()
 
 	match, matchStatus, matchErr := match(c)
 	player, playerStatus, playerErr := player(c)
@@ -132,8 +174,9 @@ func hasError(errs ...error) bool {
 }
 
 func match(ctx echo.Context) (*Match, int, error) {
+	_, span := tracer.Start(ctx.Request().Context(), "getMatchById")
+	defer span.End()
 	req, _ := http.NewRequest("GET", os.Getenv("MATCH_SVC"), nil)
-
 	forwardHeaders(ctx, req)
 	res, err := client.Do(req)
 	if err != nil {
@@ -177,7 +220,8 @@ func forwardHeaders(ctx echo.Context, r *http.Request) {
 
 func championship(ctx echo.Context) (string, int, error) {
 	req, _ := http.NewRequest("GET", os.Getenv("CHAMPIONSHIP_SVC"), nil)
-
+	_, span := tracer.Start(ctx.Request().Context(), "getChampionshipById")
+	defer span.End()
 	forwardHeaders(ctx, req)
 	res, err := client.Do(req)
 	if err != nil {
@@ -205,7 +249,8 @@ func championship(ctx echo.Context) (string, int, error) {
 
 func player(ctx echo.Context) (string, int, error) {
 	req, _ := http.NewRequest("GET", os.Getenv("PLAYER_SVC"), nil)
-
+	_, span := tracer.Start(ctx.Request().Context(), "getPlayerById")
+	defer span.End()
 	forwardHeaders(ctx, req)
 	res, err := client.Do(req)
 	if err != nil {
