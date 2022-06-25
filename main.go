@@ -302,11 +302,8 @@ type Error struct {
 
 type Match struct {
 	Date         time.Time `json:"date"`
-	Championship struct {
-		Name  string `json:"name"`
-		Stage string `json:"stage"`
-	} `json:"championship"`
-	Teams struct {
+	Championship string    `json:"championship"`
+	Teams        struct {
 		Home struct {
 			Name  string `json:"name"`
 			Score int    `json:"score"`
@@ -321,5 +318,5 @@ type Match struct {
 func (m *Match) String() string {
 	h := m.Teams.Home
 	a := m.Teams.Away
-	return fmt.Sprintf("%s - %s %dx%d %s (%s)", m.Date.Format("2006-01-02"), h.Name, h.Score, a.Score, a.Name, m.Championship.Stage)
+	return fmt.Sprintf("%s - %s %dx%d %s (%s)", m.Date.Format("2006-01-02"), h.Name, h.Score, a.Score, a.Name, m.Championship)
 }
