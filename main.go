@@ -10,6 +10,7 @@ import (
 	"github.com/motemen/go-loghttp"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -22,12 +23,13 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 var log *zerolog.Logger
-var client *http.Client
 var tracer = otel.Tracer("echo-server")
+var httpClient *http.Client
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -48,7 +50,7 @@ func init() {
 				Msg("call " + req.Method + " " + req.URL.String() + " answered")
 		},
 	}
-	client = &http.Client{Transport: transport}
+	httpClient = &http.Client{Transport: otelhttp.NewTransport(transport)}
 }
 
 func initTracer() (*sdktrace.TracerProvider, error) {
@@ -114,7 +116,11 @@ func main() {
 		}
 	}()
 
-	e.Use(otelecho.Middleware("bet"))
+	skipper := otelecho.WithSkipper(func(c echo.Context) bool {
+		return !strings.Contains(c.Request().RequestURI, "/health")
+	})
+
+	e.Use(otelecho.Middleware("bet", skipper))
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		ctx := c.Request().Context()
 		oteltrace.SpanFromContext(ctx).RecordError(err)
@@ -182,11 +188,9 @@ func hasError(errs ...error) bool {
 }
 
 func match(ctx echo.Context) (*Match, int, error) {
-	_, span := tracer.Start(ctx.Request().Context(), "getMatchById")
-	defer span.End()
 	req, _ := http.NewRequest("GET", os.Getenv("MATCH_SVC"), nil)
 	forwardHeaders(ctx, req)
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to call matches")
 		return nil, 0, err
@@ -232,10 +236,8 @@ func forwardHeaders(ctx echo.Context, r *http.Request) {
 
 func championship(ctx echo.Context) (string, int, error) {
 	req, _ := http.NewRequest("GET", os.Getenv("CHAMPIONSHIP_SVC"), nil)
-	_, span := tracer.Start(ctx.Request().Context(), "getChampionshipById")
-	defer span.End()
 	forwardHeaders(ctx, req)
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to call championships")
 		return "", 0, err
@@ -261,10 +263,8 @@ func championship(ctx echo.Context) (string, int, error) {
 
 func player(ctx echo.Context) (string, int, error) {
 	req, _ := http.NewRequest("GET", os.Getenv("PLAYER_SVC"), nil)
-	_, span := tracer.Start(ctx.Request().Context(), "getPlayerById")
-	defer span.End()
 	forwardHeaders(ctx, req)
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to call players")
 		return "", 0, err
