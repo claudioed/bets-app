@@ -11,8 +11,8 @@ import (
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -69,7 +69,7 @@ func initTracer() (*sdktrace.TracerProvider, error) {
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(b3.New()))
 	return tp, nil
 }
 
@@ -144,16 +144,12 @@ type HealthData struct {
 }
 
 func CreateBet(c echo.Context) error {
-
 	defer c.Request().Body.Close()
 	bet := &Bet{}
 	if err := json.NewDecoder(c.Request().Body).Decode(bet); err != nil {
 		log.Error().Err(err).Msg("Failed reading the request body")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error)
 	}
-
-	_, span := tracer.Start(c.Request().Context(), "createBet", oteltrace.WithAttributes(attribute.String("playerEmail", bet.Email)))
-	defer span.End()
 
 	match, matchStatus, matchErr := match(c)
 	player, playerStatus, playerErr := player(c)
