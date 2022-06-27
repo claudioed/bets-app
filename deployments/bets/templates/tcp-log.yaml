@@ -1,0 +1,9 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: bets-tcp-log
+config:
+  host: fluentd.logs.svc.cluster.local
+  port: 5170
+  tls: false
+plugin: tcp-log
