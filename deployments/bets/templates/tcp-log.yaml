@@ -4,6 +4,6 @@ metadata:
   name: bets-tcp-log
 config:
   host: fluentd.logs
-  port: 5170
+  port: 24224
   tls: false
 plugin: tcp-log
