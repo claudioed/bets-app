@@ -5,7 +5,7 @@ metadata:
   name: rl-by-header
 config:
   minute: 5
-  limit_by: header
+  limit_by: client_ip
   policy: local
 plugin: rate-limiting
 {{end}}
