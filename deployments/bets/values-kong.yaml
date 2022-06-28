@@ -50,7 +50,7 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: "kong"
     konghq.com/override: bets-do-not-preserve-host
-    konghq.com/plugins: prometheus-bets,bets-otel,bets-tcp-log
+    konghq.com/plugins: prometheus-bets,rl-by-header,bets-correlation-id
 
   hosts:
     - paths:
